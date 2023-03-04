@@ -1,0 +1,73 @@
+{% extends "basic.html" %}
+{% block header %}
+<!-- MDBootstrap Datatables  -->
+
+<script type="text/javascript" src="/static/assets/js/jquery-3.5.1.min.js"></script>
+
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+
+
+{% endblock header %}
+{% block body %}
+
+<div style="margin-top: 30px;" class="container">
+<div class="form-group">
+  <label for="exampleFormControlTextarea3">Converted text</label>
+  <textarea class="form-control" id="text_val" rows="30">{{text}}</textarea>
+  <div style="margin-top: 10px;" class="buttons" >
+  <button id="download_text_button" type="button" class="btn btn-primary">Download text</button>
+  <button id="download_doc_button" type="button" class="btn btn-secondary">Download doc</button>
+</div>
+</div>
+</div>
+
+
+
+<script>
+  $(document).ready(function() {
+
+
+    
+  $('#download_text_button').click(function() {
+
+    var element = document.createElement('a');
+          data = $('#text_val').val()
+          element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(data));
+          // element.setAttribute('href', 'data:application/msword;charset=utf-8,' + encodeURIComponent(data));
+
+          element.setAttribute('download', 'result');
+          element.style.display = 'none';
+          document.body.appendChild(element);
+
+          element.click();
+
+          document.body.removeChild(element);
+
+       
+      });
+
+
+
+      $('#download_doc_button').click(function() {
+
+var element = document.createElement('a');
+      data = $('#text_val').val()
+      element.setAttribute('href', 'data:application/msword;charset=utf-8,' + encodeURIComponent(data));
+
+      element.setAttribute('download', 'result');
+      element.style.display = 'none';
+      document.body.appendChild(element);
+
+      element.click();
+
+      document.body.removeChild(element);
+
+   
+  });
+  });
+
+
+
+</script>
+{% endblock body %}
