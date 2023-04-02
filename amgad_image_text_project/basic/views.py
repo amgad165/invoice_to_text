@@ -13,7 +13,11 @@ from django.contrib.auth.models import User
 import os
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import authenticate ,logout
-
+from django.views.generic import CreateView
+from django.urls import reverse_lazy
+from . import forms
+from django.contrib.auth.views import LoginView
+from .forms import CustomUserCreationForm
 
 # Create your views here.
 def home(request):
@@ -47,34 +51,39 @@ def upload_file(request):
                 # filepath = os.path.join(settings.MEDIA_URL, filename)
                 
                 # Save the image in the original format
-                img.save(f'{filepath}/{request.user.username}.{extension}', format=extension)
+                img.save(f'{filepath}/{request.user.email}.{extension}', format=extension)
         elif type == 'PDF':
             pdf_data = base64.b64decode(data_url.split(',')[1])
 
                     # write the rendered content to a file
-            with open(f'{filepath}/{request.user.username}.pdf', "wb") as f:
+            with open(f'{filepath}/{request.user.email}.pdf', "wb") as f:
                 f.write(pdf_data)
 
-
-        # with open(f'static/{filepath}.{extension}','wb') as fh:
-        #     for chunk in image_data.chunks():
-        #         fh.write(chunk)
-        # df = img_to_df(f'static/{file.name}')
-        # print(df.head())     
-        # data = json.load(open(fr'result_files/{request.user.username}.json'))
-        # return render(request, 'img_result.html', {"df": df})
 
         return JsonResponse({'result': 'success'})
 
 @login_required
 def img_to_table_view(request):
         extension = request.session['extension'] 
-        file_name = request.user.username 
+        file_name = request.user.email 
         filepath = settings.MEDIA_ROOT
         if default_storage.exists(f'{filepath}/{file_name}.{extension}'):
-            df = img_to_df(f'{filepath}/{file_name}.{extension}')
-            default_storage.delete(f'{filepath}/{file_name}.{extension}')  
-            return render(request, 'img_result.html', {"df": df})
+
+            try:
+                text = img_to_text(f'{filepath}/{file_name}.{extension}')
+                default_storage.delete(f'{filepath}/{file_name}.{extension}')                 
+                if search_for_bank(text):
+                    df = extract_bank_df(text)
+                    
+                else:
+                    df = extract_invoice_df(text)
+
+                return render(request, 'img_result.html', {"df": df})
+            except:
+                   
+                 return redirect('error_message')
+
+
         else:
             print("failed")
 
@@ -83,7 +92,7 @@ def img_to_table_view(request):
 @login_required
 def img_to_text_view(request):
         extension = request.session['extension'] 
-        file_name = request.user.username
+        file_name = request.user.email
         filepath = settings.MEDIA_ROOT
         if default_storage.exists(f'{filepath}/{file_name}.{extension}'):
             text = img_to_text(f'{filepath}/{file_name}.{extension}')
@@ -98,7 +107,7 @@ def img_to_text_view(request):
 @login_required
 def pdf_to_text_view(request):
         extension = request.session['extension'] 
-        file_name = request.user.username
+        file_name = request.user.email
         filepath = settings.MEDIA_ROOT
         if default_storage.exists(f'{filepath}/{file_name}.{extension}'):
  
@@ -126,45 +135,17 @@ def download_text(request):
         response['Content-Disposition'] = 'attachment; filename="result.txt"'
         return response
     
-def login(request):
-    if request.user.is_authenticated:
-        return redirect("main_page")
-    elif request.method == "POST":
-        email = request.POST.get('email')
-        email = email.split('@')[0]
-        print('emmm',email)
-        password = request.POST.get('password')
-        user = authenticate(username=email.split('@')[0], password=password)
-        
-        if user is not None:
-            auth_login(request,user)
-            messages.error(request, 'Login Success')
-            return redirect("main_page")
-        else:
-            messages.error(request, 'Login Failed')
 
-
-            
-    return render(request, 'login.html')
 
 def logout_user(request):
     logout(request)
     return redirect('/')
 
-def signup(request):
-    if request.method == "POST":
-        email = request.POST['email']
-        password = request.POST['password']
-        password2 = request.POST['verify-password']
-        if password != password2:
-            messages.info(request, 'password didn"t match')
-            return redirect('signup')
-        if User.objects.filter(email=email).exists():
-            messages.info(request, 'Email Taken')
-            return redirect('signup')
-        else:
-            user = User.objects.create_user(
-                email=email, username=email.split('@')[0], password=password)
-            user.save()
-            return redirect('login')
-    return render(request, 'signup.html')
+class SignUp(CreateView):
+    form_class = CustomUserCreationForm
+    template_name = 'signup.html'
+    success_url = reverse_lazy("login")
+
+def error_message(request):
+
+    return render(request,'error_message.html')                 

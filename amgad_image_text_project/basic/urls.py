@@ -30,8 +30,10 @@ urlpatterns = [
     # path('change_values',views.update_data,name='home'),
     # path('download',views.download_json,name='download_json'),
     # path('download_txt',views.download_txt,name='download_txt'),
-    path('accounts/login/',views.login,name='login'),
-    path('accounts/signup',views.signup,name='signup'),
+
+    path('error_message', views.error_message, name='error_message'),
+    path('accounts/login/',views.LoginView.as_view(template_name="login.html"),name='login'),
+    path('accounts/signup',views.SignUp.as_view(),name='signup'),
     path('logout',views.logout_user,name='logout'),
 ]
  
